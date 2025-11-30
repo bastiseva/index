@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orders Management - Bastiseva Admin</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .table-container {
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>🎯 Bastiseva Admin - Orders</h1>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+</div>
+
+<div class="nav">
+    <a href="dashboard.html">Dashboard</a>
+    <a href="shops.html">Shops</a>
+    <a href="products.html">Products</a>
+    <a href="orders.html" class="active">Orders</a>
+    <a href="users.html">Users</a>
+</div>
+
+<div class="container" id="mainContent" style="display:none;">
+    <div class="page-header">
+        <h2>Order Management</h2>
+    </div>
+
+    <div class="section">
+        <div class="filter-bar">
+            <input type="text" id="searchInput" placeholder="Search by Order ID or Customer...">
+            <select id="statusFilter">
+                <option value="">All Status</option>
+                <option value="placed">Placed</option>
+                <option value="accepted">Accepted</option>
+                <option value="packing">Packing</option>
+                <option value="out_for_delivery">Out for Delivery</option>
+                <option value="delivered">Delivered</option>
+                <option value="cancelled">Cancelled</option>
+            </select>
+            <input type="date" id="dateFilter">
+        </div>
+
+        <div class="table-container" id="ordersTableContainer">
+            <div class="loading">Loading orders...</div>
+        </div>
+    </div>
+</div>
+
+<div id="loadingScreen" class="loading" style="text-align:center; padding: 50px;">Loading Orders...</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+<script src="../js/common.js"></script>
+<script>
+    const db = firebase.firestore();
+    let allOrders = [];
+
+    async function loadOrders() {
+        const container = document.getElementById('ordersTableContainer');
+        container.innerHTML = '<div class="loading">Loading orders...</div>';
+
+        try {
+            const snapshot = await db.collection('orders').orderBy('createdAt', 'desc').get();
+            allOrders = [];
+            snapshot.forEach(doc => {
+                allOrders.push({ id: doc.id, ...doc.data() });
+            });
+            displayOrders(allOrders);
+        } catch (error) {
+            console.error("Error loading orders:", error);
+            container.innerHTML = `<p style="color:red">Error: ${error.message}</p>`;
+        }
+    }
+
+    function displayOrders(orders) {
+        const container = document.getElementById('ordersTableContainer');
+        if (orders.length === 0) {
+            container.innerHTML = '<p>No orders found.</p>';
+            return;
+        }
+
+        let html = `
+            <table>
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Customer</th>
+                        <th>Phone</th>
+                        <th>Amount</th>
+                        <th>Payment</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        orders.forEach(order => {
+            const statusClass = `status-${order.orderStatus || 'placed'}`;
+
+            html += `
+                <tr>
+                    <td>${order.id}</td>
+                    <td>${order.userName || 'N/A'}</td>
+                    <td>${order.userPhone || 'N/A'}</td>
+                    <td>${formatCurrency(order.totalAmount)}</td>
+                    <td>${order.paymentMethod || 'N/A'}</td>
+                    <td><span class="status ${statusClass}">${order.orderStatus || 'N/A'}</span></td>
+                    <td>${formatDate(order.createdAt)}</td>
+                    <td><button class="btn-view" onclick="viewOrder('${order.id}')">View</button></td>
+                </tr>
+            `;
+        });
+
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+    
+    function viewOrder(orderId) {
+        alert("Viewing order: " + orderId);
+    }
+
+    document.getElementById('searchInput').addEventListener('keyup', applyFilters);
+    document.getElementById('statusFilter').addEventListener('change', applyFilters);
+    document.getElementById('dateFilter').addEventListener('change', applyFilters);
+
+    function applyFilters() {
+        const searchText = document.getElementById('searchInput').value.toLowerCase();
+        const status = document.getElementById('statusFilter').value;
+        const date = document.getElementById('dateFilter').value;
+
+        let filteredOrders = allOrders.filter(order => {
+            const searchMatch = (order.id.toLowerCase().includes(searchText) || (order.userName && order.userName.toLowerCase().includes(searchText)));
+            const statusMatch = status ? order.orderStatus === status : true;
+            const dateValue = order.createdAt ? order.createdAt.toDate().toISOString().split('T')[0] : null;
+            const dateMatch = date ? dateValue === date : true;
+
+            return searchMatch && statusMatch && dateMatch;
+        });
+
+        displayOrders(filteredOrders);
+    }
+
+    checkAuth((user) => {
+        document.getElementById('loadingScreen').style.display = 'none';
+        document.getElementById('mainContent').style.display = 'block';
+        loadOrders();
+    });
+
+</script>
+</body>
+</html>

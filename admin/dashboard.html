@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Bastiseva Admin</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<!-- Header -->
+<div class="header">
+    <h1>🎯 Bastiseva Admin Dashboard</h1>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+</div>
+
+<!-- Navigation -->
+<div class="nav">
+    <a href="dashboard.html" class="active">Dashboard</a>
+    <a href="shops.html">Shops</a>
+    <a href="products.html">Products</a>
+    <a href="orders.html">Orders</a>
+    <a href="users.html">Users</a>
+</div>
+
+<!-- Container -->
+<div class="container" id="mainContent" style="display:none;">
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-info">
+                <h3>Total Orders</h3>
+                <div class="number" id="totalOrders">0</div>
+            </div>
+            <div class="stat-icon">📦</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-info">
+                <h3>Total Shops</h3>
+                <div class="number" id="totalShops">0</div>
+            </div>
+            <div class="stat-icon">🏪</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-info">
+                <h3>Total Products</h3>
+                <div class="number" id="totalProducts">0</div>
+            </div>
+            <div class="stat-icon">🍎</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-info">
+                <h3>Total Users</h3>
+                <div class="number" id="totalUsers">0</div>
+            </div>
+            <div class="stat-icon">👥</div>
+        </div>
+    </div>
+
+    <!-- Recent Orders -->
+    <div class="section">
+        <h2>Recent Orders</h2>
+        <div class="table-container" id="ordersTableContainer">
+            <div class="loading">Loading orders...</div>
+        </div>
+    </div>
+</div>
+
+<div id="loadingScreen" class="loading" style="text-align:center; padding: 50px;">Loading Dashboard...</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+<script src="../js/common.js"></script>
+<script>
+    const db = firebase.firestore();
+
+    async function loadDashboardData() {
+        try {
+            // Get counts
+            const ordersPromise = db.collection('orders').get();
+            const shopsPromise = db.collection('shops').get();
+            const productsPromise = db.collection('products').get();
+            const usersPromise = db.collection('users').get();
+
+            const [ordersSnap, shopsSnap, productsSnap, usersSnap] = await Promise.all([
+                ordersPromise, shopsPromise, productsPromise, usersPromise
+            ]);
+
+            document.getElementById('totalOrders').textContent = ordersSnap.size;
+            document.getElementById('totalShops').textContent = shopsSnap.size;
+            document.getElementById('totalProducts').textContent = productsSnap.size;
+            document.getElementById('totalUsers').textContent = usersSnap.size;
+
+            // Get recent orders
+            const recentOrdersSnap = await db.collection('orders').orderBy('createdAt', 'desc').limit(5).get();
+            const orders = [];
+            recentOrdersSnap.forEach(doc => {
+                orders.push({ id: doc.id, ...doc.data() });
+            });
+            displayRecentOrders(orders);
+
+        } catch (error) {
+            console.error("Error loading dashboard data:", error);
+            alert("Could not load dashboard data.");
+        }
+    }
+
+    function displayRecentOrders(orders) {
+        const container = document.getElementById('ordersTableContainer');
+        if (orders.length === 0) {
+            container.innerHTML = '<p>No recent orders.</p>';
+            return;
+        }
+
+        let html = `
+            <table>
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Customer</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        orders.forEach(order => {
+            html += `
+                <tr>
+                    <td>${order.id}</td>
+                    <td>${order.userName || 'N/A'}</td>
+                    <td>₹${order.totalAmount || 0}</td>
+                    <td><span class="status status-${order.orderStatus || 'placed'}">${order.orderStatus}</span></td>
+                    <td>${formatDate(order.createdAt)}</td>
+                </tr>
+            `;
+        });
+
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+
+    // Initial Load
+    checkAuth((user) => {
+        // If authenticated, show content and load data
+        document.getElementById('loadingScreen').style.display = 'none';
+        document.getElementById('mainContent').style.display = 'block';
+        loadDashboardData();
+    });
+
+</script>
+</body>
+</html>

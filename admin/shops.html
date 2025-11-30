@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shops Management - Bastiseva Admin</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="header">
+    <h1>🎯 Bastiseva Admin - Shops</h1>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+</div>
+
+<div class="nav">
+    <a href="dashboard.html">Dashboard</a>
+    <a href="shops.html" class="active">Shops</a>
+    <a href="products.html">Products</a>
+    <a href="orders.html">Orders</a>
+    <a href="users.html">Users</a>
+</div>
+
+<div class="container" id="mainContent" style="display:none;">
+    <div class="page-header">
+        <h2>Shop Management</h2>
+        <button class="btn-primary" onclick="openAddShopModal()">+ Add New Shop</button>
+    </div>
+
+    <div class="section">
+        <div class="search-bar">
+            <input type="text" placeholder="Search shops..." id="searchInput">
+            <select id="categoryFilter">
+                <option value="">All Categories</option>
+                <option value="medicine">Medicine</option>
+                <option value="food_veg">Food - Veg</option>
+                <option value="food_nonveg">Food - Non-Veg</option>
+                <option value="vegetables">Vegetables</option>
+                <option value="fruits">Fruits</option>
+                <option value="grocery">Grocery</option>
+                <option value="cosmetic">Cosmetics</option>
+                <option value="fastfood">Fast Food</option>
+                <option value="sweets">Sweets</option>
+            </select>
+            <select id="statusFilter">
+                <option value="">All Status</option>
+                <option value="true">Active</option>
+                <option value="false">Inactive</option>
+            </select>
+        </div>
+
+        <div class="table-container" id="shopsTableContainer">
+            <div class="loading">Loading shops...</div>
+        </div>
+    </div>
+</div>
+
+<div id="loadingScreen" class="loading" style="text-align:center; padding: 50px;">Loading Shops...</div>
+
+<!-- Add/Edit Shop Modal -->
+<div id="shopModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle">Add New Shop</h3>
+            <button class="close-btn" onclick="closeModal()">&times;</button>
+        </div>
+
+        <form id="shopForm">
+            <div class="form-group">
+                <label>Shop Name *</label>
+                <input type="text" id="shopName" required placeholder="e.g., Green Fresh Vegetables">
+            </div>
+
+            <div class="form-group">
+                <label>Category *</label>
+                <select id="shopCategory" required>
+                    <option value="">Select Category</option>
+                    <option value="medicine">Medicine</option>
+                    <option value="food_veg">Food - Veg</option>
+                    <option value="food_nonveg">Food - Non-Veg</option>
+                    <option value="vegetables">Vegetables</option>
+                    <option value="fruits">Fruits</option>
+                    <option value="grocery">Grocery</option>
+                    <option value="cosmetic">Cosmetics</option>
+                    <option value="fastfood">Fast Food</option>
+                    <option value="sweets">Sweets</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Phone Number *</label>
+                <input type="tel" id="shopPhone" required placeholder="9876543210" maxlength="10">
+            </div>
+
+            <div class="form-group">
+                <label>Email (Optional)</label>
+                <input type="email" id="shopEmail" placeholder="shop@example.com">
+            </div>
+
+            <div class="form-group">
+                <label>Address *</label>
+                <textarea id="shopAddress" required placeholder="Full shop address with landmark"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Landmark (Optional)</label>
+                <input type="text" id="shopLandmark" placeholder="Near HDFC Bank">
+            </div>
+
+            <div class="form-group">
+                <label>Image URL</label>
+                <input type="url" id="shopImageUrl" placeholder="https://example.com/shop-image.jpg">
+                <small style="color: #666; display: block; margin-top: 5px;">
+                    Or upload image below 👇
+                </small>
+            </div>
+
+            <div class="form-group">
+                <label>Upload Shop Image</label>
+                <input type="file" id="shopImageFile" accept="image/*" onchange="previewImage(event)">
+                <div id="imagePreview" style="margin-top: 10px; display: none;">
+                    <img id="previewImg" style="max-width: 200px; border-radius: 8px; border: 2px solid #e0e0e0;">
+                    <button type="button" onclick="removeImage()" style="display: block; margin-top: 10px; padding: 6px 12px; background: #e74c3c; color: white; border: none; border-radius: 6px; cursor: pointer;">Remove Image</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Latitude (Optional)</label>
+                <input type="number" step="0.000001" id="shopLatitude" placeholder="28.5355">
+                <small style="color: #666; display: block; margin-top: 5px;">
+                    Get from Google Maps by right-clicking on location
+                </small>
+            </div>
+
+            <div class="form-group">
+                <label>Longitude (Optional)</label>
+                <input type="number" step="0.000001" id="shopLongitude" placeholder="77.3910">
+            </div>
+
+            <div class="form-group">
+                <label>Opening Time (Optional)</label>
+                <input type="time" id="shopOpenTime" value="08:00">
+            </div>
+
+            <div class="form-group">
+                <label>Closing Time (Optional)</label>
+                <input type="time" id="shopCloseTime" value="22:00">
+            </div>
+
+            <div class="form-group">
+                <label>Status</label>
+                <select id="shopStatus">
+                    <option value="true">Active</option>
+                    <option value="false">Inactive</option>
+                </select>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn-cancel" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn-primary" id="btnSave">Save Shop</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+
+<script src="../js/common.js"></script>
+<script>
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+
+    let allShops = [];
+    let currentShopId = null;
+    let uploadedImageUrl = null;
+
+    const modal = document.getElementById('shopModal');
+    const shopForm = document.getElementById('shopForm');
+    const modalTitle = document.getElementById('modalTitle');
+
+    function openAddShopModal() {
+        currentShopId = null;
+        modalTitle.textContent = 'Add New Shop';
+        shopForm.reset();
+        document.getElementById('imagePreview').style.display = 'none';
+        uploadedImageUrl = null;
+        modal.style.display = 'block';
+    }
+
+    function editShop(shop) {
+        currentShopId = shop.id;
+        modalTitle.textContent = 'Edit Shop';
+        shopForm.reset();
+        document.getElementById('imagePreview').style.display = 'none';
+        uploadedImageUrl = null;
+
+        document.getElementById('shopName').value = shop.name || '';
+        document.getElementById('shopCategory').value = shop.category || '';
+        document.getElementById('shopPhone').value = shop.phone || '';
+        document.getElementById('shopEmail').value = shop.email || '';
+        document.getElementById('shopAddress').value = shop.address || '';
+        document.getElementById('shopLandmark').value = shop.landmark || '';
+        document.getElementById('shopImageUrl').value = shop.imageUrl || '';
+        document.getElementById('shopLatitude').value = shop.latitude || '';
+        document.getElementById('shopLongitude').value = shop.longitude || '';
+        document.getElementById('shopOpenTime').value = shop.openTime || '08:00';
+        document.getElementById('shopCloseTime').value = shop.closeTime || '22:00';
+        document.getElementById('shopStatus').value = shop.isActive.toString();
+
+        if (shop.imageUrl) {
+            document.getElementById('previewImg').src = shop.imageUrl;
+            document.getElementById('imagePreview').style.display = 'block';
+            uploadedImageUrl = shop.imageUrl;
+        }
+        modal.style.display = 'block';
+    }
+
+    function closeModal() {
+        modal.style.display = 'none';
+    }
+
+    function previewImage(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('previewImg').src = e.target.result;
+                document.getElementById('imagePreview').style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function removeImage() {
+        document.getElementById('shopImageFile').value = '';
+        document.getElementById('imagePreview').style.display = 'none';
+        uploadedImageUrl = null;
+    }
+
+    async function uploadImage(file) {
+        if (!file) return null;
+        const timestamp = Date.now();
+        const fileName = `shops/${timestamp}_${file.name}`;
+        const storageRef = storage.ref(fileName);
+        try {
+            const snapshot = await storageRef.put(file);
+            return await snapshot.ref.getDownloadURL();
+        } catch (error) {
+            console.error('Error uploading image:', error);
+            alert('Error uploading image: ' + error.message);
+            return null;
+        }
+    }
+
+    async function loadShops() {
+        const container = document.getElementById('shopsTableContainer');
+        container.innerHTML = '<div class="loading">Loading shops...</div>';
+        try {
+            const snapshot = await db.collection('shops').orderBy('createdAt', 'desc').get();
+            allShops = [];
+            snapshot.forEach(doc => {
+                allShops.push({ id: doc.id, ...doc.data() });
+            });
+            displayShops(allShops);
+        } catch (error) {
+            console.error('Error loading shops:', error);
+            container.innerHTML = `<p style="color:red">Error: ${error.message}</p>`;
+        }
+    }
+
+    function displayShops(shops) {
+        const container = document.getElementById('shopsTableContainer');
+        if (shops.length === 0) {
+            container.innerHTML = '<p>No shops found. Add your first shop!</p>';
+            return;
+        }
+
+        let html = `
+            <table>
+                <thead>
+                    <tr>
+                        <th>Image</th>
+                        <th>Shop Name</th>
+                        <th>Category</th>
+                        <th>Phone</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        shops.forEach(shop => {
+            const statusClass = shop.isActive ? 'badge-active' : 'badge-inactive';
+            const statusText = shop.isActive ? 'Active' : 'Inactive';
+            html += `
+                <tr>
+                    <td><img src="${shop.imageUrl || 'https://via.placeholder.com/60'}" alt="${shop.name}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;"></td>
+                    <td>${shop.name}</td>
+                    <td>${shop.category}</td>
+                    <td>${shop.phone}</td>
+                    <td><span class="badge ${statusClass}">${statusText}</span></td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="btn-edit" onclick='editShop(${JSON.stringify(shop)})'>Edit</button>
+                            <button class="btn-delete" onclick="deleteShop('${shop.id}', '${shop.name}')">Delete</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+
+    shopForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const btnSave = document.getElementById('btnSave');
+        btnSave.disabled = true;
+        btnSave.textContent = 'Saving...';
+
+        try {
+            const imageFile = document.getElementById('shopImageFile').files[0];
+            if (imageFile) {
+                uploadedImageUrl = await uploadImage(imageFile);
+                if (!uploadedImageUrl) throw new Error('Image upload failed');
+            } else {
+                uploadedImageUrl = document.getElementById('shopImageUrl').value || uploadedImageUrl;
+            }
+
+            const shopData = {
+                name: document.getElementById('shopName').value.trim(),
+                category: document.getElementById('shopCategory').value,
+                phone: document.getElementById('shopPhone').value.trim(),
+                email: document.getElementById('shopEmail').value.trim() || '',
+                address: document.getElementById('shopAddress').value.trim(),
+                landmark: document.getElementById('shopLandmark').value.trim() || '',
+                imageUrl: uploadedImageUrl,
+                latitude: parseFloat(document.getElementById('shopLatitude').value) || 0,
+                longitude: parseFloat(document.getElementById('shopLongitude').value) || 0,
+                openTime: document.getElementById('shopOpenTime').value || '08:00',
+                closeTime: document.getElementById('shopCloseTime').value || '22:00',
+                isActive: document.getElementById('shopStatus').value === 'true',
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            if (currentShopId) {
+                await db.collection('shops').doc(currentShopId).update(shopData);
+                showToast('Shop updated successfully!', 'success');
+            } else {
+                shopData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                const docRef = await db.collection('shops').add(shopData);
+                await db.collection('shops').doc(docRef.id).update({ shopId: docRef.id });
+                showToast('Shop added successfully!', 'success');
+            }
+            closeModal();
+            loadShops();
+        } catch (error) {
+            console.error('Error saving shop:', error);
+            showToast('Error: ' + error.message, 'error');
+        } finally {
+            btnSave.disabled = false;
+            btnSave.textContent = 'Save Shop';
+        }
+    });
+
+    async function deleteShop(shopId, shopName) {
+        if (confirm(`Are you sure you want to delete "${shopName}"?`)) {
+            try {
+                await db.collection('shops').doc(shopId).delete();
+                showToast('Shop deleted!', 'success');
+                loadShops();
+            } catch (error) {
+                console.error('Error deleting shop:', error);
+                showToast(`Error: ${error.message}`, 'error');
+            }
+        }
+    }
+
+    // --- Filtering ---
+    document.getElementById('searchInput').addEventListener('keyup', applyFilters);
+    document.getElementById('categoryFilter').addEventListener('change', applyFilters);
+    document.getElementById('statusFilter').addEventListener('change', applyFilters);
+
+    function applyFilters() {
+        const searchText = document.getElementById('searchInput').value.toLowerCase();
+        const category = document.getElementById('categoryFilter').value;
+        const status = document.getElementById('statusFilter').value;
+
+        let filteredShops = allShops.filter(shop => {
+            const searchMatch = shop.name.toLowerCase().includes(searchText);
+            const categoryMatch = category ? shop.category === category : true;
+            const statusMatch = status ? shop.isActive.toString() === status : true;
+            return searchMatch && categoryMatch && statusMatch;
+        });
+        displayShops(filteredShops);
+    }
+
+    // Initial Load
+    checkAuth((user) => {
+        document.getElementById('loadingScreen').style.display = 'none';
+        document.getElementById('mainContent').style.display = 'block';
+        loadShops();
+    });
+</script>
+</body>
+</html>
